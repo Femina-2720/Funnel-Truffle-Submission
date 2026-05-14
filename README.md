@@ -275,15 +275,29 @@ The AI cost per run is negligible. n8n Cloud dominates.
 
 *What is one marketing process that should be automated but currently isn't?*
 
-Real estate developers in India run pre-launch campaigns for months. They collect thousands of site visit leads — people who actually showed up to the project site or attended a property expo. Warmest leads in the funnel. And then a sales coordinator manually calls each one, days later, with a pitch the buyer has already heard ten times from other developers at the same expo.
+Most SaaS companies collect customer reviews everywhere — G2, Trustpilot, Reddit, Google Play, App Store reviews, support tickets, even random LinkedIn comments. Hundreds of people explaining, in public, exactly why they bought the product, what frustrated them, what almost stopped them from converting, and which competitor they nearly chose instead. And then the marketing team sits in a meeting room writing ad copy from gut feel.
 
-The problem isn't the follow-up. It's the gap, and the sameness.
+The problem isn't the lack of feedback. It's that nobody operationalises it.
 
-What I'd automate: the moment someone registers at a site visit or expo stall, trigger a lookup using their phone number and email against LinkedIn and property search platforms (Housing.com, MagicBricks) to understand their search history and professional context. Feed that into a prompt that writes a WhatsApp message within two hours — while they still remember the conversation — that references something specific to them. Not *"Thanks for visiting Prestige Elysium"* but *"You mentioned the 3BHK range — here's what that payment plan looks like."*
+What I'd automate: a Voice-of-Customer mining engine that turns scattered customer reviews into structured marketing intelligence every week.
 
-In n8n: lead form submission → Truecaller Business API enrichment → LinkedIn/Clearbit-style enrichment → GPT-4o personalised message → Interakt or Wati to send on WhatsApp → log to CRM with enrichment data attached.
+The moment a new review appears — whether on G2, Reddit, Trustpilot, or a support platform — the workflow pulls it into n8n through APIs or scraping tools. The text gets cleaned, deduplicated, and normalised first, because customers rarely write in polished “marketing language,” especially in India. They write things like “support actually replies on WhatsApp,” “easy for our small team,” “works even on slow internet,” or “setup didn’t need a developer.” Those phrases are far more valuable than anything a copywriter invents internally.
 
-The reason this isn't automated yet isn't technical. The CRM exists. The WhatsApp Business API exists. The gap is relationship inertia — sales teams keep calling because calls feel more personal, even as response rates drop. The automation doesn't replace the sales call. It earns the sales call by warming the lead before it goes cold.
+Once processed, GPT-4o clusters the reviews into patterns:
+
+* why customers bought
+* recurring complaints
+* feature requests
+* competitor comparisons
+* objections appearing before conversion
+* phrases customers repeatedly use when they’re happy
+
+In n8n: review source APIs/scrapers → text cleaning + deduplication → GPT-4o clustering and sentiment analysis → Notion brief generation → Slack alerts for critical complaints → archive into searchable database.
+
+The output isn’t just a sentiment dashboard. It generates something teams can actually use: headline-worthy customer phrases for ads, recurring objections for sales battle cards, feature complaints worth escalating to product teams, and emerging sentiment trends over time.
+
+The reason this still isn’t automated properly isn’t technical. The APIs exist. The AI exists. Companies just treat reviews as support content instead of live market research. But the best-performing marketing usually comes directly from the customer’s own words — not from brainstorming sessions inside the company.
+
 
 ---
 
