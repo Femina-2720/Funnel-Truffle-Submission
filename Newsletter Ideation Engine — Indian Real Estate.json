@@ -1,0 +1,1201 @@
+{
+  "name": "Newsletter Ideation Engine — Indian Real Estate",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "f4f5df5b-2489-4b87-8ba5-690e2b4bdffe",
+      "name": "Every Monday 8 AM IST",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        240,
+        1168
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://realty.economictimes.indiatimes.com/rss/topstories",
+        "options": {
+          "ignoreSSL": true
+        }
+      },
+      "id": "0ca4d679-01c4-4a10-b7b7-2acdf0aed768",
+      "name": "RSS — ET Realty",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        688,
+        688
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "numberInputs": 6
+      },
+      "id": "36269fc2-f29f-477b-9ed6-87528c108338",
+      "name": "Combine All Feeds",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        912,
+        1104
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://thepropertytimes.in/feed",
+        "options": {
+          "ignoreSSL": true
+        }
+      },
+      "id": "fd89fd78-c0bf-4b0f-b1ad-c1330eaab0a0",
+      "name": "RSS — Property Times",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        688,
+        880
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "https://news.google.com/rss/search?q=real+estate+india&hl=en-IN&gl=IN&ceid=IN:en",
+        "options": {
+          "ignoreSSL": true
+        }
+      },
+      "id": "2338dc61-7200-4b17-9287-1f778f9e0613",
+      "name": "RSS — Google News RE",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        688,
+        1072
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "https://news.google.com/rss/search?q=proptech+india&hl=en-IN&gl=IN&ceid=IN:en",
+        "options": {
+          "ignoreSSL": true
+        }
+      },
+      "id": "71cdf0fb-dfec-4cab-9c71-b0e46df2e7ae",
+      "name": "RSS — Google News PropTech",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        688,
+        1264
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "https://realtynxt.com/feed",
+        "options": {
+          "ignoreSSL": true
+        }
+      },
+      "id": "1fa13c23-69f6-4565-abd5-1500a6354672",
+      "name": "RSS — RealtyNXT",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        688,
+        1456
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;\nconst seen = new Set();\nconst output = [];\n\nfor (const item of items) {\n  const article = item.json;\n  \n  // Dedup by link, guid, or title (title is safest for Google News redirects)\n  const dedupKey = article.link || article.guid || article.title;\n  if (!dedupKey || seen.has(dedupKey)) continue;\n  seen.add(dedupKey);\n\n  // Date filter: skip articles older than 7 days\n  const pubDate = article.pubDate || article.isoDate;\n  if (pubDate) {\n    const articleDate = new Date(pubDate).getTime();\n    if (!isNaN(articleDate) && articleDate < sevenDaysAgo) {\n      continue;\n    }\n  }\n\n  const summary = article.contentSnippet || article.description || article.content || \"\";\n  const needsEnrichment = summary.length < 50;\n\n  output.push({\n    title: (article.title || \"Untitled\").substring(0, 200), // cap title length\n    link: article.link || article.guid || \"\",\n    pubDate: pubDate || new Date().toISOString(),\n    summary: summary.substring(0, 1000), // cap summary length\n    needs_enrichment: needsEnrichment,\n    source: article.creator || article.author || \"Unknown\"\n  });\n\n  if (output.length >= 25) break;\n}\n\nconst insufficient = output.length < 3;\n\nreturn [{\n  json: {\n    articles: output,\n    count: output.length,\n    insufficient_data: insufficient,\n    run_date: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "4f10b862-f062-4f99-a99d-7123f2854fe2",
+      "name": "Code — Dedup + Filter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1136,
+        1168
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.insufficient_data }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "id": "560b8068-6c32-4470-a339-8e03346962fd"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "0d32d3fe-e7a1-43d8-bc5d-e79030929c69",
+      "name": "IF — Enough Articles?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1360,
+        1168
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hooks.slack.com/services/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",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"text\": \"⚠️ *Newsletter Engine Alert*\\nRan on \" + $now.toFormat(\"dd MMM yyyy\") + \" but found only \" + $json.count + \" articles (minimum 3 needed).\\n*Action needed:* Manual curation required this week.\", \"blocks\": [{ \"type\": \"section\", \"text\": { \"type\": \"mrkdwn\", \"text\": \"⚠️ *Newsletter Engine — Thin Week Alert*\\nFound *\" + $json.count + \" articles* on \" + $now.toFormat(\"dd MMM yyyy\") + \". Please add sources manually.\" } }] } }}",
+        "options": {}
+      },
+      "id": "aac11721-e3c4-4f0e-8d3d-75167f1a5927",
+      "name": "Slack Alert — Thin Week",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1584,
+        1264
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw =\n  $input.first().json.output[0].content[0].text;\n\nreturn [{\n  json: raw\n}];"
+      },
+      "id": "ddc22412-8888-4417-a9a9-4db43fad2426",
+      "name": "Code — Parse AI 1 JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3280,
+        1056
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw =\n  $input.first().json.output[0].content[0].text;\n\nreturn [{\n  json: raw\n}];"
+      },
+      "id": "854ebf79-7790-480c-8b95-b88b2bfa23c0",
+      "name": "Code — Parse AI 3 JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4496,
+        1040
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "value": "https://www.notion.so/coherent-duo/360b428fb07580ba9637f7f59d2d32d9?v=360b428fb07580519d41000cf41549a8",
+          "mode": "url"
+        },
+        "title": "=Newsletter Brief — {{ $now.setZone(\"Asia/Kolkata\").toFormat(\"dd MMM yyyy\") }}",
+        "simple": false,
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Week|date",
+              "date": "={{ $now.setZone(\"Asia/Kolkata\").toISO() }}",
+              "timezone": "Asia/Kolkata"
+            },
+            {
+              "key": "Status|select",
+              "selectValue": "Draft"
+            },
+            {
+              "key": "Angle|rich_text",
+              "richText": true,
+              "text": {
+                "text": [
+                  {
+                    "text": "={{ $json.chosen_angle?.title ?? \"N/A\" }}",
+                    "annotationUi": {}
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "blockUi": {
+          "blockValues": [
+            {
+              "type": "heading_2",
+              "textContent": "⭐ Recommended Angle"
+            },
+            {
+              "textContent": "=**Title:** {{ $json.chosen_angle?.title ?? \"N/A\" }}"
+            },
+            {
+              "textContent": "=**Hook:** {{ $json.chosen_angle?.hook ?? \"N/A\" }}"
+            },
+            {
+              "textContent": "=**Suggested Subject Line:** {{ $json.suggested_subject_line ?? \"N/A\" }}"
+            },
+            {
+              "type": "heading_3",
+              "textContent": "✍️ Draft Opening (100 Words)"
+            },
+            {
+              "textContent": "={{ $json.draft_opening ?? \"No draft generated\" }}"
+            },
+            {
+              "textContent": "=**Why this angle won:** {{ $json.reason_chosen ?? \"\" }}"
+            },
+            {
+              "type": "heading_2",
+              "textContent": "📊 All 5 Candidate Angles"
+            },
+            {
+              "textContent": "={{ \"🏆 #1 — \" + ($json.all_angles?.[0]?.title ?? \"N/A\") + \" | Score: \" + ($json.all_angles?.[0]?.engagement_score ?? \"?\") + \"/5 ← CHOSEN\" }}"
+            },
+            {
+              "textContent": "={{ \"Hook: \" + ($json.all_angles?.[0]?.hook ?? \"N/A\") }}"
+            },
+            {
+              "textContent": "={{ \"Why it won: \" + ($json.reason_chosen ?? \"N/A\") }}"
+            },
+            {
+              "textContent": "---"
+            },
+            {
+              "textContent": "={{ \"2️⃣ \" + ($json.all_angles?.[1]?.title ?? \"N/A\") + \" | Score: \" + ($json.all_angles?.[1]?.engagement_score ?? \"?\") + \"/5\" }}"
+            },
+            {
+              "textContent": "={{ \"Hook: \" + ($json.all_angles?.[1]?.hook ?? \"\") + \" | For: \" + ($json.all_angles?.[1]?.target_reader ?? \"\") }}"
+            },
+            {
+              "textContent": "={{ \"3️⃣ \" + ($json.all_angles?.[2]?.title ?? \"N/A\") + \" | Score: \" + ($json.all_angles?.[2]?.engagement_score ?? \"?\") + \"/5\" }}"
+            },
+            {
+              "textContent": "={{ \"Hook: \" + ($json.all_angles?.[2]?.hook ?? \"\")}}"
+            },
+            {
+              "textContent": "={{ \"4️⃣ \" + ($json.all_angles?.[3]?.title ?? \"N/A\") + \" | Score: \" + ($json.all_angles?.[3]?.engagement_score ?? \"?\") + \"/5\" }}"
+            },
+            {
+              "textContent": "={{ \"Hook: \" + ($json.all_angles?.[3]?.hook ?? \"\") }}"
+            },
+            {
+              "textContent": "={{ \"5️⃣ \" + ($json.all_angles?.[4]?.title ?? \"N/A\") + \" | Score: \" + ($json.all_angles?.[4]?.engagement_score ?? \"?\") + \"/5\" }}"
+            },
+            {
+              "textContent": "={{ \"Hook: \" + ($json.all_angles?.[4]?.hook ?? \"\") }}"
+            },
+            {
+              "type": "heading_2",
+              "textContent": "⚙️ Run Metadata"
+            },
+            {
+              "textContent": "=Run: {{ $('Every Monday 8 AM IST').item.json[\"Readable date\"] }} | AI: GPT-4o-mini (Nodes 1–2) + GPT-4o (Node 3)"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "84e3d24c-b527-4ea2-ab01-de9e7f0580b2",
+      "name": "Notion — Create Brief Page",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        4736,
+        1040
+      ],
+      "credentials": {
+        "notionOAuth2Api": {
+          "id": "A1lKBYn3U4B25oSF",
+          "name": "Notion OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://newsapi.org/v2/everything",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "real estate india"
+            },
+            {
+              "name": "language",
+              "value": "en"
+            },
+            {
+              "name": "sortBy",
+              "value": "publishedAt"
+            },
+            {
+              "name": "pageSize",
+              "value": "20"
+            },
+            {
+              "name": "apiKey",
+              "value": "78d2663781f6425184af4608ecdebcb1"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "7a32557c-ad44-4d21-a4b0-051e46281d7d",
+      "name": "NewsAPI Fallback — Real Estate India",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        464,
+        1648
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nif (!response.articles || !Array.isArray(response.articles)) {\n  return [];\n}\n\nreturn response.articles.map(article => ({\n  json: {\n    title: article.title || \"Untitled\",\n    link: article.url || \"\",\n    pubDate: article.publishedAt || new Date().toISOString(),\n    content: article.content || article.description || \"\",\n    contentSnippet: article.description || \"\",\n    guid: article.url || \"\",\n    isoDate: article.publishedAt || new Date().toISOString()\n  }\n}));"
+      },
+      "id": "e2eaede0-8dfa-4105-a3ce-2a1a597ecd86",
+      "name": "Code — Transform NewsAPI Format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        1648
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const articles = $input.first().json.articles || [];\nreturn articles.map(article => ({ json: article }));"
+      },
+      "id": "de03fa40-f17f-4601-a69b-9b0215969cb2",
+      "name": "Code — Split Articles to Items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1584,
+        1072
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.needs_enrichment }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals"
+                    },
+                    "id": "ca7293bc-46f3-47ec-a49b-7e2a1a2f96fa"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "e2a902f1-36f8-45e9-ac09-e4660e4a5d59",
+      "name": "Switch — Needs Enrichment?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1808,
+        1072
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.link }}",
+        "options": {
+          "outputFormat": "text"
+        },
+        "requestOptions": {
+          "timeout": 30000
+        }
+      },
+      "id": "e9b3ec97-b5eb-4fde-b081-c08ed0357adf",
+      "name": "Jina AI — Enrich Empty Summaries",
+      "type": "n8n-nodes-base.jinaAi",
+      "typeVersion": 1,
+      "position": [
+        2032,
+        1008
+      ],
+      "credentials": {
+        "jinaAiApi": {
+          "id": "YrTgccjUvbpT2whE",
+          "name": "Jina AI account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const enrichedText = $json.data || \"\";\nconst originalArticle = $input.item.json;\n\n// Take first 600 chars of scraped text as the summary\nconst enrichedSummary = enrichedText\n  .replace(/\\s+/g, \" \")\n  .trim()\n  .substring(0, 600);\n\nreturn {\n  json: {\n    title: originalArticle.title,\n    link: originalArticle.link,\n    pubDate: originalArticle.pubDate,\n    summary: enrichedSummary || originalArticle.summary || \"No summary available\",\n    needs_enrichment: false,\n    source: originalArticle.source || \"Unknown\",\n    was_enriched: true\n  }\n};"
+      },
+      "id": "c82c2389-28ff-47d7-bd5a-4414ee4755f9",
+      "name": "Code — Merge Enriched Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2256,
+        1008
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "288908c4-d6d4-4edb-9c57-3d15587e4ac5",
+      "name": "Merge — Enriched + Original",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2480,
+        1072
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const articles = $input.all().map(item => item.json);\n\nreturn [{\n  json: {\n    articles: articles,\n    count: articles.length,\n    run_date: new Date().toISOString(),\n    week_number: (() => {\n      const now = new Date();\n      const startOfYear = new Date(now.getFullYear(), 0, 1);\n      return Math.ceil(((now - startOfYear) / 86400000 + startOfYear.getDay() + 1) / 7);\n    })()\n  }\n}];"
+      },
+      "id": "717f2e30-8d4b-4fa8-bcbb-07d94c7fe611",
+      "name": "Code — Recombine to Array",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2704,
+        1072
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw =\n  $input.first().json.output[0].content[0].text;\n\nreturn [{\n  json: raw\n}];"
+      },
+      "id": "6482076f-4363-4563-b471-5834458ef9fb",
+      "name": "Code — Parse AI 2 JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3856,
+        1056
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1eyMBjMdRIuneF8jBVh0LkzlvGl3vdN9CIIzhm7T-Nps",
+          "mode": "list",
+          "cachedResultName": "Newsletter Engine Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1eyMBjMdRIuneF8jBVh0LkzlvGl3vdN9CIIzhm7T-Nps/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1eyMBjMdRIuneF8jBVh0LkzlvGl3vdN9CIIzhm7T-Nps/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Notion URL": "={{ $json.url ?? \"Check Notion\" }}",
+            "Run Date": "={{ $now.setZone(\"Asia/Kolkata\").toFormat(\"dd/MM/yyyy HH:mm\") }}",
+            "Week Number": "={{ (() => { const now = new Date(); const start = new Date(now.getFullYear(), 0, 1); return Math.ceil(((now - start) / 86400000 + start.getDay() + 1) / 7); })() }}",
+            "Articles Found": "={{ $('Code — Recombine to Array').item.json.count ?? 0 }}",
+            "Chosen Angle": "={{ $('Code — Parse AI 3 JSON').item.json.chosen_angle?.title ?? \"N/A\" }}",
+            "Hook": "={{ $('Code — Parse AI 3 JSON').item.json.chosen_angle?.hook ?? \"N/A\" }}",
+            "Draft Opening": "={{ ($('Code — Parse AI 3 JSON').item.json.draft_opening ?? \"\").substring(0, 200) }}",
+            "Themes": "={{ ($('Code — Parse AI 1 JSON').item.json.themes ?? []).map(t => t.name).join(\", \") }}",
+            "Angle 2 Title": "={{ $('Code — Parse AI 3 JSON').item.json.all_angles?.[1]?.title ?? \"\" }}",
+            "Angle 3 Title": "={{ $('Code — Parse AI 3 JSON').item.json.all_angles?.[2]?.title ?? \"\" }}",
+            "Angle 4 Title": "={{ $('Code — Parse AI 3 JSON').item.json.all_angles?.[3]?.title ?? \"\" }}",
+            "Angle 5 Title": "={{ $('Code — Parse AI 3 JSON').item.json.all_angles?.[4]?.title ?? \"\" }}",
+            "All Scores": "={{ ($('Code — Parse AI 3 JSON').item.json.all_angles ?? []).map(a => a.engagement_score).join(\", \") }}",
+            "Status": "Draft"
+          },
+          "matchingColumns": [
+            "Notion URL"
+          ],
+          "schema": [
+            {
+              "id": "Run Date",
+              "displayName": "Run Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Week Number",
+              "displayName": "Week Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Articles Found",
+              "displayName": "Articles Found",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Chosen Angle",
+              "displayName": "Chosen Angle",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Hook",
+              "displayName": "Hook",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Draft Opening",
+              "displayName": "Draft Opening",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Themes",
+              "displayName": "Themes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Notion URL",
+              "displayName": "Notion URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Angle 2 Title",
+              "displayName": "Angle 2 Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Angle 3 Title",
+              "displayName": "Angle 3 Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Angle 4 Title",
+              "displayName": "Angle 4 Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Angle 5 Title",
+              "displayName": "Angle 5 Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "All Scores",
+              "displayName": "All Scores",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "bbeee34f-f856-4439-8734-cb68a2b929a9",
+      "name": "Google Sheets — Log Run",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        4960,
+        1040
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "tkDjLp2kZPWA4WcZ",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a senior editor curating a weekly newsletter for Indian real estate professionals — developers, buyers, investors, and PropTech founders. You think about what they actually need to know, not just what got published. Always respond with valid JSON only."
+            },
+            {
+              "content": "=Here are {{ $json.count }} real estate articles from this week.\n\nStep 1 — Filter ruthlessly. Remove any article that is:\n- Purely a project advertisement or developer press release\n- Not relevant to the Indian real estate market\n- A duplicate story from a different source (keep only the most informative version)\n\nStep 2 — Group what remains into 3–4 distinct themes (examples: Policy & Regulatory, Market Trends & Pricing, PropTech & Innovation, Luxury & Ultra-HNI Segment, Affordable Housing, Commercial Real Estate).\n\nReturn ONLY this exact JSON structure:\n{\n  \"filtered_articles\": [\n    { \"title\": \"...\", \"link\": \"...\", \"summary\": \"...\" }\n  ],\n  \"themes\": [\n    {\n      \"name\": \"Theme Name\",\n      \"articles\": [\"Article title 1\", \"Article title 2\"],\n      \"why_relevant\": \"One sentence on why this theme matters to readers this week\"\n    }\n  ]\n}\n\nArticles:\n{{ JSON.stringify($json.articles) }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "maxTokens": 4096,
+          "textFormat": {
+            "textOptions": {
+              "type": "json_object"
+            }
+          },
+          "temperature": 0.3
+        }
+      },
+      "id": "417cfd73-e87d-4d67-811f-c35c9d15bb96",
+      "name": "AI 1 — Theme Clustering (OpenAI)",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        2928,
+        1072
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are an editorial strategist who writes newsletter angles for India's real estate industry. You think about what makes professionals forward a newsletter — not summaries, but insights and tensions. Always respond with valid JSON only."
+            },
+            {
+              "content": "=Based on this week's real estate themes and filtered articles, generate exactly 5 distinct newsletter angle candidates.\n\nRules:\n- Each angle must approach the week's news from a genuinely different editorial perspective\n- Do NOT write 5 variations of the same headline\n- Think like a journalist who reads PropTiger, ET Realty, and Mint — what story would make someone forward this newsletter?\n- Be specific to Indian real estate context\n\nReturn ONLY this exact JSON:\n{\n  \"angles\": [\n    {\n      \"title\": \"Punchy working title (not final headline)\",\n      \"hook\": \"One sentence — what is the insight or tension that makes this worth reading\",\n      \"target_reader\": \"Who specifically benefits from this angle\",\n      \"engagement_score\": 4,\n      \"score_reason\": \"Why this score — be honest about weaknesses too\"\n    }\n  ]\n}\n\nThemes and articles this week:\n{{ JSON.stringify($json) }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "maxTokens": 3000,
+          "textFormat": {
+            "textOptions": {
+              "type": "json_object"
+            }
+          },
+          "temperature": 0.8
+        }
+      },
+      "id": "da7d05ad-d931-4143-91f6-6464e86603fb",
+      "name": "AI 2 — Generate Angles (OpenAI)",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        3504,
+        1072
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are an experienced real estate newsletter writer. Your readers are time-poor Indian real estate professionals who've seen every generic 'market is heating up' opener. You write like a smart person talking to another smart person. Always respond with valid JSON only."
+            },
+            {
+              "content": "=From these 5 angle candidates, pick the ONE strongest based on: timeliness, reader curiosity, and originality. Then write the opening 100 words of that newsletter issue.\n\nWriting rules for the draft:\n- First sentence must earn the second. No 'In today's issue...' intros.\n- Write like a smart person talking to another smart person\n- Ground it in a specific data point or observation from the week's news\n- Do not summarise. Start mid-thought.\n- Keep it specifically relevant to the Indian real estate context\n\nReturn ONLY this exact JSON:\n{\n  \"chosen_angle\": { \"title\": \"...\", \"hook\": \"...\" },\n  \"reason_chosen\": \"2-3 sentences on why this beat the others\",\n  \"draft_opening\": \"The actual 100-word opening paragraph\",\n  \"suggested_subject_line\": \"An email subject line for this issue\",\n  \"all_angles\": [\n    {\n      \"rank\": 1,\n      \"title\": \"...\",\n      \"hook\": \"...\",\n      \"target_reader\": \"...\",\n      \"engagement_score\": 5,\n      \"score_reason\": \"...\",\n      \"status\": \"chosen\"\n    },\n    {\n      \"rank\": 2,\n      \"title\": \"...\",\n      \"hook\": \"...\",\n      \"target_reader\": \"...\",\n      \"engagement_score\": 4,\n      \"score_reason\": \"...\",\n      \"status\": \"rejected\"\n    },\n    {\n      \"rank\": 3,\n      \"title\": \"...\",\n      \"hook\": \"...\",\n      \"target_reader\": \"...\",\n      \"engagement_score\": 3,\n      \"score_reason\": \"...\",\n      \"status\": \"rejected\"\n    },\n    {\n      \"rank\": 4,\n      \"title\": \"...\",\n      \"hook\": \"...\",\n      \"target_reader\": \"...\",\n      \"engagement_score\": 3,\n      \"score_reason\": \"...\",\n      \"status\": \"rejected\"\n    },\n    {\n      \"rank\": 5,\n      \"title\": \"...\",\n      \"hook\": \"...\",\n      \"target_reader\": \"...\",\n      \"engagement_score\": 2,\n      \"score_reason\": \"...\",\n      \"status\": \"rejected\"\n    }\n  ]\n}\n\nRank 1 must be the chosen angle. Ranks 2-5 are rejected in descending score order.\n\nAngle candidates:\n{{ JSON.stringify($json) }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "maxTokens": 2000,
+          "textFormat": {
+            "textOptions": {
+              "type": "json_object"
+            }
+          },
+          "temperature": 0.7
+        }
+      },
+      "id": "a1cba269-dbb9-41d8-bf31-0370bb3c195e",
+      "name": "AI 3 — Pick Best + Draft (OpenAI)",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        4080,
+        1056
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "content": "# 🏢 AI Real Estate Newsletter Engine\n\n### Flow\nRSS + NewsAPI → Dedup & Filter → Enrich Missing Summaries → AI Theme Clustering → AI Angle Generation → AI Draft Writing → Notion + Google Sheets\n\n### AI Pipeline\n- AI 1 → Groups articles into themes\n- AI 2 → Generates 5 newsletter angles\n- AI 3 → Picks best angle + writes opening draft\n\n\n### Outputs\n\n* Weekly newsletter brief\n* Editorial angles\n* Draft opening paragraph\n* Notion page\n* Google Sheets log\n\n### Error Handling\n\n* RSS failures ignored\n* Jina scraping failures ignored\n* Slack alert if < 3 articles found\n \n",
+        "height": 528,
+        "width": 1072
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2272,
+        432
+      ],
+      "typeVersion": 1,
+      "id": "e97ae929-fbd8-4004-b5aa-e842f66b5e04",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every Monday 8 AM IST": {
+      "main": [
+        [
+          {
+            "node": "RSS — ET Realty",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS — Property Times",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS — Google News RE",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS — Google News PropTech",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS — RealtyNXT",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "NewsAPI Fallback — Real Estate India",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS — ET Realty": {
+      "main": [
+        [
+          {
+            "node": "Combine All Feeds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine All Feeds": {
+      "main": [
+        [
+          {
+            "node": "Code — Dedup + Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS — Property Times": {
+      "main": [
+        [
+          {
+            "node": "Combine All Feeds",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "RSS — Google News RE": {
+      "main": [
+        [
+          {
+            "node": "Combine All Feeds",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "RSS — Google News PropTech": {
+      "main": [
+        [
+          {
+            "node": "Combine All Feeds",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "RSS — RealtyNXT": {
+      "main": [
+        [
+          {
+            "node": "Combine All Feeds",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "Code — Dedup + Filter": {
+      "main": [
+        [
+          {
+            "node": "IF — Enough Articles?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF — Enough Articles?": {
+      "main": [
+        [
+          {
+            "node": "Code — Split Articles to Items",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack Alert — Thin Week",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code — Parse AI 1 JSON": {
+      "main": [
+        [
+          {
+            "node": "AI 2 — Generate Angles (OpenAI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code — Parse AI 3 JSON": {
+      "main": [
+        [
+          {
+            "node": "Notion — Create Brief Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "NewsAPI Fallback — Real Estate India": {
+      "main": [
+        [
+          {
+            "node": "Code — Transform NewsAPI Format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code — Transform NewsAPI Format": {
+      "main": [
+        [
+          {
+            "node": "Combine All Feeds",
+            "type": "main",
+            "index": 5
+          }
+        ]
+      ]
+    },
+    "Code — Split Articles to Items": {
+      "main": [
+        [
+          {
+            "node": "Switch — Needs Enrichment?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch — Needs Enrichment?": {
+      "main": [
+        [
+          {
+            "node": "Jina AI — Enrich Empty Summaries",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge — Enriched + Original",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Jina AI — Enrich Empty Summaries": {
+      "main": [
+        [
+          {
+            "node": "Code — Merge Enriched Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code — Merge Enriched Content": {
+      "main": [
+        [
+          {
+            "node": "Merge — Enriched + Original",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge — Enriched + Original": {
+      "main": [
+        [
+          {
+            "node": "Code — Recombine to Array",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code — Recombine to Array": {
+      "main": [
+        [
+          {
+            "node": "AI 1 — Theme Clustering (OpenAI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notion — Create Brief Page": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets — Log Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI 1 — Theme Clustering (OpenAI)": {
+      "main": [
+        [
+          {
+            "node": "Code — Parse AI 1 JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI 2 — Generate Angles (OpenAI)": {
+      "main": [
+        [
+          {
+            "node": "Code — Parse AI 2 JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI 3 — Pick Best + Draft (OpenAI)": {
+      "main": [
+        [
+          {
+            "node": "Code — Parse AI 3 JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code — Parse AI 2 JSON": {
+      "main": [
+        [
+          {
+            "node": "AI 3 — Pick Best + Draft (OpenAI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "8273a88e-9bc5-4b88-8b15-f0643e9be78f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2c66b21043f835cea8aedb92829bc45115d09eb5aefe54ed096be5a76c56223d"
+  },
+  "id": "3TPbowdVsmcIMIHI",
+  "tags": []
+}
