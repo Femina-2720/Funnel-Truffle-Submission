@@ -108,7 +108,7 @@ PHASE 3 — AI PIPELINE
 AI 1: gpt-4o-mini   → filter press releases, cluster into 3–4 themes
     ↓ parse JSON
 AI 2: gpt-4o-mini   → generate 5 candidate angles (title, hook, target reader, score, reasoning)
-    ↓ 3s wait (rate limit buffer)
+    ↓ 3s wait (rate limit buffer) -> actual plan but it is not available in cloud n8n so i not implemented.
 AI 3: gpt-4o        → pick strongest angle, write 100-word draft, return all 5 with metadata
 
 PHASE 4 — OUTPUT
@@ -143,7 +143,7 @@ Google Sheets → Append run log row
 | 20 | Parse AI 1 JSON | Strips markdown fences, `JSON.parse` with try/catch |
 | 21 | AI 2 — Generate Angles | GPT-4o-mini — 5 angles with full metadata |
 | 22 | Parse AI 2 JSON | Same parse pattern |
-| 23 | Wait 3s | Rate limit buffer between AI 2 and AI 3 |
+| 23 | Wait 3s | Rate limit buffer between AI 2 and AI 3.Not yet implemented but had this idea. | 
 | 24 | AI 3 — Pick Best + Draft | **GPT-4o** — the writing node. Returns all 5 angles with status |
 | 25 | Parse AI 3 JSON | Adds `run_timestamp` and `run_date_formatted` |
 | 26 | Notion — Create Brief | Title, hook, subject line, draft, all 5 angles with scores |
