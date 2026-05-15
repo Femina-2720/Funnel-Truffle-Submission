@@ -12,7 +12,7 @@ Built on n8n. Runs every Monday 8 AM IST. Pulls from 6 news sources, runs 3 sequ
 
 | | |
 |---|---|
-| 🎥 **Loom Walkthrough** | *(YouTube link — uploading shortly)* |
+| 🎥 **Loom Walkthrough** | [Newsletter Ideation Engine — Indian Real Estate -by Femina ->](https://youtu.be/NhjIHx39zqU?si=P7Yr7PZ33dLOe9TQ) |
 | 📋 **Notion Database** | [Newsletter Briefs →](https://www.notion.so/coherent-duo/360b428fb07580ba9637f7f59d2d32d9?v=360b428fb07580519d41000cf41549a8) |
 | 📊 **Google Sheets Log** | [Newsletter Engine Log →](https://docs.google.com/spreadsheets/d/1eyMBjMdRIuneF8jBVh0LkzlvGl3vdN9CIIzhm7T-Nps/edit) |
 | 📦 **Workflow JSON** | [`Newsletter_Ideation_Engine___Indian_Real_Estate.json`](./Newsletter_Ideation_Engine___Indian_Real_Estate.json) |
@@ -298,6 +298,11 @@ The output isn’t just a sentiment dashboard. It generates something teams can 
 
 The reason this still isn’t automated properly isn’t technical. The APIs exist. The AI exists. Companies just treat reviews as support content instead of live market research. But the best-performing marketing usually comes directly from the customer’s own words — not from brainstorming sessions inside the company.
 
+
+---
+
+## Youtube Demo Video
+<iframe width="560" height="315" src="https://www.youtube.com/embed/NhjIHx39zqU?si=P7Yr7PZ33dLOe9TQ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 ---
 
